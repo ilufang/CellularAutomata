@@ -183,9 +183,9 @@ class Button extends Control
     textSize(h/1.5);
     textAlign(CENTER, CENTER);
     text(caption, x+w/2, y+h/2);
-  // This line has an unknown problem with processing.js
-  // the text(String, int, int, int, int) will never draw
-  // So I have to do it in another way
+    // This line has an unknown problem with processing.js
+    // the text(String, int, int, int, int) will never draw
+    // So I have to do it in another way
   }
 }
 
@@ -270,83 +270,171 @@ class Switch extends Button
     stroke(#FFFFFF);
     if (value)
     {
-      fill(#00ff00,255);
-    }
-    else
+      fill(#00ff00, 255);
+    } else
     {
-      fill(#666666,153);
+      fill(#666666, 153);
     }
-    ellipse(x+8,y+h/2,h/2,h/2);
+    ellipse(x+8, y+h/2, h/2, h/2);
   }
 }
 
 // begin
 
-int cx = 100,
-cy = 100;
-
+int cx = 100, 
+cy = 100, 
+w = 5;
+float spread=0.38;
 color alive_color=#66ccff;
 
-boolean[][] world = new int[cx][cy];
+
+boolean[][] world = new boolean[cx][cy];
+boolean running = true;
 
 void setup()
 {
-  size(cx*2, cy*2);
+  size(cx*w, cy*w+150);
 }
 
 void render_world()
 {
   fill(alive_color);
-  for(int i=0;i!=cx;i++)
+  for (int i=0; i!=cx; i++)
   {
-    for(int j=0;j!=cy;j++)
+    for (int j=0; j!=cy; j++)
     {
-      if(world[i][j])
+      if (world[i][j])
       {
-        rect(i*2,j*2,2,2);
+        rect(i*w, j*w, w, w);
       }
     }
   }
 }
 
-//boolean retrive_state(int x, int y)
-//{
-//  // Retrive matrix cell value with overflow/underflow detection
-//  if(x<0||x>=cx||y<0||y>=cy)
-//  {
-//    return false;
-//}
-//
-//int neighbor_count(int x, int y)
-//{
-//  int count;
-//  if(x==0)
-//}
-//
-//boolean update_cell(int x, int y)
-//{
-//  
-//}
+boolean retrive_state(int x, int y)
+{
+  // Retrive matrix cell value with overflow/underflow detection
+  if (x<0||x>=cx||y<0||y>=cy)
+  {
+    return false;
+  }
+  if (world[x][y])
+  {
+    return true;
+  } else
+  {
+    return false;
+  }
+}
+
+int neighbor_count(int x, int y)
+{
+  int count=0;
+  if(retrive_state(x-1,y-1))
+  {count++;}
+  if(retrive_state(x,y-1))
+  {count++;}
+  if(retrive_state(x+1,y-1))
+  {count++;}
+  if(retrive_state(x-1,y))
+  {count++;}
+  if(retrive_state(x+1,y))
+  {count++;}
+  if(retrive_state(x-1,y+1))
+  {count++;}
+  if(retrive_state(x,y+1))
+  {count++;}
+  if(retrive_state(x+1,y+1))
+  {count++;}
+  return count;
+}
+
+boolean update_cell(int x, int y)
+{
+  int count = neighbor_count(x,y);
+  if(count<2)
+  {return false;}
+  if(count>3)
+  {return false;}
+  if(count==3)
+  {return true;}
+  return world[x][y];
+}
 
 void update_world()
 {
-  int[][] new_world = new int[cx][cy];
-  for(int i=0;i!=cx;i++)
+  boolean[][] new_world = new boolean[cx][cy];
+  for (int i=0; i!=cx; i++)
   {
-    for(int j=0;j!=cy;j++)
+    for (int j=0; j!=cy; j++)
     {
-      new_world[i][j]=update_cell(i,j);
+      new_world[i][j]=update_cell(i, j);
     }
   }
+  world = new_world;
 }
+
+Button reset = new Button("Clear", 10, 10+cy*w, cx*w/2-20, 25, #000000,#66ccff);
+Button randomize = new Button("Randomize", 5+cx*w/2, 10+cy*w, cx*w/2-20, 25, #000000,#66ccff);
+Button pause = new Button("Pause", 10, 10+cy*w+30, cx*w/2-20, 25, #000000,#66ccff);
+Button iter = new Button("Iterate", 5+cx*w/2, 10+cy*w+30, cx*w/2-20, 25, #000000,#66ccff);
+Slider spread_ctrl = new Slider(spread, 10,10+cy*w+60,cx*w/2-20, 25, #66ccff,#3366ff);
+Slider speed_ctrl = new Slider(0, 5+cx*w/2,10+cy*w+60,cx*w/2-20, 25, #66ccff,#3366ff);
 
 void draw()
 {
-  background(#000000);
-  if(mousePressed)
+  background(#ffffff);
+  if (mousePressed&&mouseY/w<cy&&mouseY>0&&mouseX>0&&mouseX<cx*w)
   {
-    world[mouseX/2][mouseY/2]=true;
+    world[mouseX/w][mouseY/w]=true;
   }
-  update_world();
+  if(running)
+  {
+    update_world();
+  }
   render_world();
+  
+  if(reset.hitTest()==CS_CLICK)
+  {
+    setup();
+    for(int i=0; i!=cx; i++)
+    {
+      for(int j=0; j!=cy; j++)
+      {
+          world[i][j]=false;
+      }
+    }
+  }
+  if(randomize.hitTest()==CS_CLICK)
+  {
+    setup();
+    for(int i=0; i!=cx; i++)
+    {
+      for(int j=0; j!=cy; j++)
+      {
+        if(random(0,1)<spread)
+        {
+          world[i][j]=true;
+        }
+      }
+    }
+  }
+  if(pause.hitTest()==CS_CLICK)
+  {
+    running = !running;
+  }
+  if(iter.hitTest()==CS_CLICK)
+  {
+    update_world();
+  }
+  if(spread_ctrl.hitTest()==CS_PRESS)
+  {
+    spread = spread_ctrl.value;
+  }
+  reset.draw();
+  randomize.draw();
+  pause.draw();
+  iter.draw();
+  spread_ctrl.draw();
 }
+
