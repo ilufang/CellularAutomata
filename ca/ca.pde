@@ -62,10 +62,12 @@ class Control
 class Slider extends Control
 {
   public float value;
-  Slider(float init_val, float x_pos, float y_pos, float Width, float Height, color background, color tint)
+  public String caption;
+  Slider(float init_val, String title, float x_pos, float y_pos, float Width, float Height, color background, color tint)
   {
     //    super.Control(x_pos, y_pos, Width, Height, tint, background);
     state = CS_NORMAL;
+    caption = title;
     x = x_pos;
     y = y_pos;
     w = Width/1.1;
@@ -88,6 +90,8 @@ class Slider extends Control
     float w_temp = w; // Slider background must be complete
     w*=1.1;
     super.draw();
+    fill(0);
+    text(caption, x+w/2, y+h/2);
     w = w_temp; // Set back for slider drawing
     // Draw Slider
     noStroke();
@@ -287,9 +291,10 @@ w = 5;
 float spread=0.38;
 color alive_color=#66ccff;
 
-
 boolean[][] world = new boolean[cx][cy];
 boolean running = true;
+int skip=0;
+int lone = 2, crowd = 3, reproduce = 3;
 
 void setup()
 {
@@ -352,11 +357,11 @@ int neighbor_count(int x, int y)
 boolean update_cell(int x, int y)
 {
   int count = neighbor_count(x,y);
-  if(count<2)
+  if(count<lone)
   {return false;}
-  if(count>3)
+  if(count>crowd)
   {return false;}
-  if(count==3)
+  if(count==reproduce)
   {return true;}
   return world[x][y];
 }
@@ -378,22 +383,26 @@ Button reset = new Button("Clear", 10, 10+cy*w, cx*w/2-20, 25, #000000,#66ccff);
 Button randomize = new Button("Randomize", 5+cx*w/2, 10+cy*w, cx*w/2-20, 25, #000000,#66ccff);
 Button pause = new Button("Pause", 10, 10+cy*w+30, cx*w/2-20, 25, #000000,#66ccff);
 Button iter = new Button("Iterate", 5+cx*w/2, 10+cy*w+30, cx*w/2-20, 25, #000000,#66ccff);
-Slider spread_ctrl = new Slider(spread, 10,10+cy*w+60,cx*w/2-20, 25, #66ccff,#3366ff);
-Slider speed_ctrl = new Slider(0, 5+cx*w/2,10+cy*w+60,cx*w/2-20, 25, #66ccff,#3366ff);
+
+Slider spread_ctrl = new Slider(spread, "Spread:"+spread*100+"%", 10,10+cy*w+60,cx*w/2-20, 25, #66ccff,#3366ff);
+Slider speed_ctrl = new Slider(1,"Speed:100%", 5+cx*w/2,10+cy*w+60,cx*w/2-20, 25, #66ccff,#3366ff);
+
+Slider lone_ctrl = new Slider(0.2,"Lone:"+lone, 10,10+cy*w+90,cx*w/3-20, 25, #66ccff,#3366ff);
+Slider crowd_ctrl = new Slider(0.3,"Crowd:"+crowd, 5+cx*w/3,10+cy*w+90,cx*w/3-20, 25, #66ccff,#3366ff);
+Slider reproduce_ctrl = new Slider(0.3,"Reproduce:"+reproduce, 5+cx*w/3*2,10+cy*w+90,cx*w/3-20, 25, #66ccff,#3366ff);
+
+
+int current_skip = 0;
 
 void draw()
 {
   background(#ffffff);
-  if (mousePressed&&mouseY/w<cy&&mouseY>0&&mouseX>0&&mouseX<cx*w)
+  if (mousePressed&&mouseY<cy*w&&mouseY>0&&mouseX>0&&mouseX<cx*w)
   {
-    world[mouseX/w][mouseY/w]=true;
-  }
-  if(running)
-  {
-    update_world();
+    world[(int)(mouseX/w)][(int)(mouseY/w)]=true;
   }
   render_world();
-  
+
   if(reset.hitTest()==CS_CLICK)
   {
     setup();
@@ -415,7 +424,10 @@ void draw()
         if(random(0,1)<spread)
         {
           world[i][j]=true;
-        }
+        }else
+		{
+		  world[i][j]=false;
+		}
       }
     }
   }
@@ -430,11 +442,52 @@ void draw()
   if(spread_ctrl.hitTest()==CS_PRESS)
   {
     spread = spread_ctrl.value;
+    spread_ctrl.caption = "Spread:"+spread*100+"%";
+  }
+  if(speed_ctrl.hitTest()==CS_PRESS)
+  {
+    skip = (int)((1-speed_ctrl.value)*10);
+    speed_ctrl.caption = "Speed:"+speed_ctrl.value*100+"%";
+  }
+  if(lone_ctrl.hitTest()==CS_PRESS)
+  {
+    lone = (int)((lone_ctrl.value)*10);
+    lone_ctrl.caption = "Lone:"+lone;
+  }
+  if(crowd_ctrl.hitTest()==CS_PRESS)
+  {
+    crowd = (int)((crowd_ctrl.value)*10);
+    crowd_ctrl.caption = "Crowd:"+crowd;
+  }
+  if(reproduce_ctrl.hitTest()==CS_PRESS)
+  {
+    reproduce = (int)((reproduce_ctrl.value)*10);
+    reproduce_ctrl.caption = "Reproduce:"+reproduce;
   }
   reset.draw();
   randomize.draw();
   pause.draw();
   iter.draw();
   spread_ctrl.draw();
+  speed_ctrl.draw();
+  lone_ctrl.draw();
+  crowd_ctrl.draw();
+  reproduce_ctrl.draw();
+  
+  // Speed control
+  if(current_skip<skip)
+  {
+    current_skip++;
+    return;
+  }
+  current_skip = 0; // reset;
+  
+  // auto update below
+  if(running)
+  {
+    update_world();
+  }
+
+
 }
 
