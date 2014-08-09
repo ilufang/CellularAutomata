@@ -1,9 +1,12 @@
+//Controls
+
 final int CS_NORMAL =  0, 
 CS_HOVER = 1, 
 CS_PRESS = 2, 
 CS_CLICK = 3, 
 CS_RELEASE = 4;
 
+boolean _Control_input_capture =false;
 
 class Control
 {
@@ -38,12 +41,22 @@ class Control
         // Mouse in area
         if (mousePressed)
         {
-          if (state != CS_PRESS)
+          if (state == CS_HOVER)
           {
+            // Click
             state = CS_PRESS;
             return CS_CLICK;
           }
-          return CS_PRESS;
+          if (state == CS_PRESS)
+          {
+            // Hold
+            return CS_PRESS;
+          }
+          if (state == CS_NORMAL)
+          {
+            // Hold and enter
+            return CS_NORMAL;
+          }
         }
         if (state == CS_PRESS)
         {
@@ -63,17 +76,18 @@ class Slider extends Control
 {
   public float value;
   public String caption;
-  Slider(float init_val, String title, float x_pos, float y_pos, float Width, float Height, color background, color tint)
+  public color textcolor;
+  Slider(float init_val, String title, float x_pos, float y_pos, float Width, float Height, color blockColor, color textColor, color background)
   {
-    //    super.Control(x_pos, y_pos, Width, Height, tint, background);
-    state = CS_NORMAL;
     caption = title;
+    state = CS_NORMAL;
     x = x_pos;
     y = y_pos;
     w = Width/1.1;
     h = Height;
-    fg = tint;
+    fg = blockColor;
     bg = background;
+    textcolor = textColor;
     value = init_val;
   }
   void draw()
@@ -90,7 +104,9 @@ class Slider extends Control
     float w_temp = w; // Slider background must be complete
     w*=1.1;
     super.draw();
-    fill(0);
+    fill(textcolor);
+    textAlign(CENTER, CENTER);
+    textSize(h/2);
     text(caption, x+w/2, y+h/2);
     w = w_temp; // Set back for slider drawing
     // Draw Slider
@@ -114,9 +130,22 @@ class Slider extends Control
   private void updateVal()
   {
     value = value0 + ((float)((mouseX-drag_begin_displacement)))/((float)w);
+    if (value<0)
+    {
+      value = 0;
+    }
+    if (value>1)
+    {
+      value = 1;
+    }
   }
   int hitTest()
   {
+    if (_Control_input_capture&&state!=CS_PRESS)
+    {
+      return CS_NORMAL;
+    }
+    // WORK CONTINUES HERE
     if (mouseY>=y&&mouseY-y<=h)
     {
       if (mouseX>=x+value*w&&mouseX-(x+value*w)<=w/10&&value>=0&&value<=1)
@@ -125,7 +154,12 @@ class Slider extends Control
         if (mousePressed)
         {
           // Update value
-          if (state != CS_PRESS)
+          if (state == CS_NORMAL)
+          {
+            // Hold mouse and enter
+            return CS_NORMAL;
+          }
+          if (state == CS_HOVER)
           {
             // Just Began dragging
             drag_begin_displacement = mouseX;
@@ -184,7 +218,7 @@ class Button extends Control
     }
     rect(x, y, w, h);
     fill(fg);
-    textSize(h/1.5);
+    textSize(h/2);
     textAlign(CENTER, CENTER);
     text(caption, x+w/2, y+h/2);
     // This line has an unknown problem with processing.js
@@ -230,7 +264,7 @@ class StateButton extends Button
     }
     rect(x, y, w, h);
     fill(fg);
-    textSize(h/1.5);
+    textSize(h/2);
     textAlign(CENTER, CENTER);
     text(caption, x+w/2, y+h/2);
   }
@@ -384,12 +418,12 @@ Button randomize = new Button("Randomize", 5+cx*w/2, 10+cy*w, cx*w/2-20, 25, #00
 Button pause = new Button("Pause", 10, 10+cy*w+30, cx*w/2-20, 25, #000000,#66ccff);
 Button iter = new Button("Iterate", 5+cx*w/2, 10+cy*w+30, cx*w/2-20, 25, #000000,#66ccff);
 
-Slider spread_ctrl = new Slider(spread, "Spread:"+spread*100+"%", 10,10+cy*w+60,cx*w/2-20, 25, #66ccff,#3366ff);
-Slider speed_ctrl = new Slider(1,"Speed:100%", 5+cx*w/2,10+cy*w+60,cx*w/2-20, 25, #66ccff,#3366ff);
+Slider spread_ctrl = new Slider(spread, "Spread:"+spread*100+"%", 10,10+cy*w+60,cx*w/2-20, 25,#3366ff, #000000,#66ccff);
+Slider speed_ctrl = new Slider(1,"Speed:100%", 5+cx*w/2,10+cy*w+60,cx*w/2-20, 25, #3366ff, #000000,#66ccff);
 
-Slider lone_ctrl = new Slider(0.2,"Lone:"+lone, 10,10+cy*w+90,cx*w/3-20, 25, #66ccff,#3366ff);
-Slider crowd_ctrl = new Slider(0.3,"Crowd:"+crowd, 5+cx*w/3,10+cy*w+90,cx*w/3-20, 25, #66ccff,#3366ff);
-Slider reproduce_ctrl = new Slider(0.3,"Reproduce:"+reproduce, 5+cx*w/3*2,10+cy*w+90,cx*w/3-20, 25, #66ccff,#3366ff);
+Slider lone_ctrl = new Slider(0.2,"Lone:"+lone, 10,10+cy*w+90,cx*w/3-20, 25, #3366ff, #000000,#66ccff);
+Slider crowd_ctrl = new Slider(0.3,"Crowd:"+crowd, 5+cx*w/3,10+cy*w+90,cx*w/3-20, 25,  #3366ff,#000000,#66ccff);
+Slider reproduce_ctrl = new Slider(0.3,"Reproduce:"+reproduce, 5+cx*w/3*2,10+cy*w+90,cx*w/3-20, 25,  #3366ff,#000000,#66ccff);
 
 
 int current_skip = 0;
